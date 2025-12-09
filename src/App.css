@@ -169,3 +169,129 @@ main {
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
+
+/* Стили для поиска */
+.search-box {
+  background: white;
+  padding: 15px 20px;
+  border-radius: 10px;
+  margin: 20px 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.search-input {
+  flex: 1;
+  padding: 10px 15px;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 1em;
+  transition: all 0.3s;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.search-count {
+  background: #667eea;
+  color: white;
+  padding: 5px 15px;
+  border-radius: 20px;
+  font-size: 0.9em;
+  font-weight: bold;
+  min-width: 120px;
+  text-align: center;
+}
+
+/* Обёртка для карточки с заметками */
+.technology-card-wrapper {
+  display: flex;
+  flex-direction: column;
+}
+
+.technology-card-wrapper .technology-card {
+  margin-bottom: 0;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.technology-card-wrapper .notes-section {
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  margin-top: 0;
+  border-top: 1px solid #e9ecef;
+}
+
+/* Адаптивность для поиска */
+@media (max-width: 768px) {
+  .search-box {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .search-input {
+    width: 100%;
+  }
+  
+  .search-count {
+    align-self: flex-start;
+  }
+}
+
+/* Стили для основного прогресс-бара в шапке */
+.main-progress-bar {
+  max-width: 600px;
+  margin: 20px auto 0;
+  width: 100%;
+}
+
+/* Стили для кнопки экспорта */
+.export-btn {
+  background: #17a2b8;
+  color: white;
+}
+
+.export-modal-content {
+  text-align: center;
+}
+
+.export-hint {
+  color: #666;
+  margin-top: 10px;
+  font-size: 0.9em;
+}
+
+/* Улучшенные стили для карточек с заметками */
+.technology-card-wrapper {
+  display: flex;
+  flex-direction: column;
+  background: white;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.technology-card-wrapper:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.technology-card-wrapper .technology-card {
+  margin-bottom: 0;
+  border-radius: 0;
+  box-shadow: none;
+  cursor: pointer;
+}
+
+.technology-card-wrapper .notes-section {
+  border-top: 1px solid #e9ecef;
+  border-radius: 0;
+  margin-top: 0;
+}

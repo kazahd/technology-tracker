@@ -35,3 +35,11 @@
 .complete-all { background: #4caf50; color: white; }
 .reset-all { background: #ff9800; color: white; }
 .random-pick { background: #9c27b0; color: white; }
+
+.export-btn {
+  background: #17a2b8 !important;
+}
+
+.export-btn:hover {
+  background: #138496 !important;
+}

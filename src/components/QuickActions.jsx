@@ -1,42 +1,36 @@
+import { useState } from 'react';
 import './QuickActions.css';
+import Modal from './Modal';
 
-function QuickActions({ technologies, setTechnologies }) {
-  // 1. Отметить все как выполненные
-  const markAllCompleted = () => {
-    setTechnologies(prev => 
-      prev.map(tech => ({ ...tech, status: 'completed' }))
-    );
-  };
+function QuickActions({ technologies, markAllCompleted, resetAll, pickRandomTechnology }) {
+  const [showExportModal, setShowExportModal] = useState(false);
 
-  // 2. Сбросить все статусы
-  const resetAll = () => {
-    setTechnologies(prev => 
-      prev.map(tech => ({ ...tech, status: 'not-started' }))
-    );
-  };
-
-  // 3. Случайный выбор следующей технологии
-  const pickRandomTechnology = () => {
-    const notStartedTechs = technologies.filter(tech => tech.status === 'not-started');
+  const handleExport = () => {
+    const data = {
+      exportedAt: new Date().toISOString(),
+      technologies: technologies
+    };
+    const dataStr = JSON.stringify(data, null, 2);
     
-    if (notStartedTechs.length === 0) {
-      alert('Все технологии уже начаты или изучены!');
-      return;
+    // Создаем Blob и ссылку для скачивания
+    const blob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `technology-tracker-export-${new Date().getTime()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    setShowExportModal(true);
+  };
+
+  const handleRandomPick = () => {
+    const randomTech = pickRandomTechnology();
+    if (randomTech) {
+      alert(`🎲 Следующая технология для изучения: "${randomTech.title}"`);
     }
-
-    const randomTech = notStartedTechs[Math.floor(Math.random() * notStartedTechs.length)];
-    const techName = randomTech.title;
-    
-    // Обновляем статус на "in-progress"
-    setTechnologies(prev => 
-      prev.map(tech => 
-        tech.id === randomTech.id 
-          ? { ...tech, status: 'in-progress' } 
-          : tech
-      )
-    );
-    
-    alert(`Следующая технология для изучения: "${techName}"`);
   };
 
   return (
@@ -49,10 +43,34 @@ function QuickActions({ technologies, setTechnologies }) {
         <button onClick={resetAll} className="action-btn reset-all">
           🔄 Сбросить все статусы
         </button>
-        <button onClick={pickRandomTechnology} className="action-btn random-pick">
+        <button onClick={handleRandomPick} className="action-btn random-pick">
           🎲 Выбрать случайную технологию
         </button>
+        <button onClick={handleExport} className="action-btn export-btn">
+          📤 Экспорт данных
+        </button>
       </div>
+
+      <Modal
+        isOpen={showExportModal}
+        onClose={() => setShowExportModal(false)}
+        title="Экспорт данных"
+      >
+        <div className="export-modal-content">
+          <p>✅ Данные успешно экспортированы!</p>
+          <p>Файл с данными был скачан на ваш компьютер.</p>
+          <p className="export-hint">
+            <small>Формат: JSON, содержит все технологии с их статусами и заметками</small>
+          </p>
+          <button 
+            className="action-btn"
+            onClick={() => setShowExportModal(false)}
+            style={{ marginTop: '15px' }}
+          >
+            Закрыть
+          </button>
+        </div>
+      </Modal>
     </div>
   );
 }

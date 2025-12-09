@@ -1,0 +1,46 @@
+.notes-section {
+  margin-top: 15px;
+  padding: 15px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  border-left: 3px solid #6c757d;
+}
+
+.notes-section h4 {
+  margin: 0 0 10px 0;
+  color: #495057;
+  font-size: 0.95em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.notes-textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ced4da;
+  border-radius: 5px;
+  font-family: inherit;
+  font-size: 0.9em;
+  resize: vertical;
+  min-height: 60px;
+  transition: border-color 0.3s;
+}
+
+.notes-textarea:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+.notes-hint {
+  margin-top: 8px;
+  font-size: 0.8em;
+  color: #6c757d;
+  text-align: right;
+  font-style: italic;
+}
+
+.notes-hint::before {
+  content: "💡 ";
+}
