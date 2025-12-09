@@ -131,6 +131,15 @@ function TechnologyDetail() {
           )}
         </div>
 
+        
+        <div className="detail-section">
+            <h3>📚 Дополнительные ресурсы</h3>
+            <TechnologyResources 
+                technologyId={technology.id}
+                technologyTitle={technology.title}
+        />
+        </div>
+
         {/* Быстрые действия */}
         <div className="detail-section">
           <h3>⚡ Быстрые действия</h3>

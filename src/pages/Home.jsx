@@ -1,3 +1,4 @@
+// pages/Home.jsx
 import { Link } from 'react-router-dom';
 import ProgressHeader from '../components/ProgressHeader';
 import QuickActions from '../components/QuickActions';
@@ -14,6 +15,26 @@ function Home() {
   } = useTechnologies();
 
   const recentTechnologies = technologies.slice(0, 3);
+
+  // Функция для перевода статуса на русский
+  const getStatusInRussian = (status) => {
+    switch(status) {
+      case 'completed': return 'изучено';
+      case 'in-progress': return 'в процессе';
+      case 'not-started': return 'не начато';
+      default: return status;
+    }
+  };
+
+  // Функция для получения эмодзи статуса
+  const getStatusEmoji = (status) => {
+    switch(status) {
+      case 'completed': return '✅';
+      case 'in-progress': return '🔄';
+      case 'not-started': return '⏳';
+      default: return '';
+    }
+  };
 
   return (
     <div className="page">
@@ -71,8 +92,7 @@ function Home() {
                     <h3>{tech.title}</h3>
                     <p>{tech.description.substring(0, 100)}...</p>
                     <div className="status-badge">
-                      {tech.status === 'completed' ? '✅' : 
-                       tech.status === 'in-progress' ? '🔄' : '⏳'} {tech.status}
+                      {getStatusEmoji(tech.status)} {getStatusInRussian(tech.status)}
                     </div>
                   </div>
                 </Link>
