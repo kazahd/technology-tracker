@@ -103,12 +103,16 @@ main {
 
 /* Подвал */
 .App-footer {
-  text-align: center;
-  margin-top: 40px;
-  padding: 20px;
-  border-top: 1px solid #e2e8f0;
-  color: #94a3b8;
-  font-size: 0.9em;
+    text-align: center;
+    margin-top: 40px;
+    padding: 20px;
+    border-top: 1px solid #e2e8f0;
+    color: #94a3b8;
+    font-size: 0.9em;
+}
+
+.App-footer p {
+    margin: 0;
 }
 
 /* Адаптивность */

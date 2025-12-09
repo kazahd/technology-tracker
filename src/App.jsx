@@ -29,11 +29,8 @@ function App() {
         </main>
 
         <footer className="App-footer">
-          <p>Трекер изучения технологий • Практическое занятие 23 • {new Date().getFullYear()}</p>
-          <p style={{ fontSize: '0.8em', marginTop: '5px', opacity: 0.7 }}>
-            React Router • Многостраничное SPA • Данные сохраняются в localStorage
-          </p>
-        </footer>
+    <p>Трекер изучения технологий</p>
+</footer>
       </div>
     </Router>
   );

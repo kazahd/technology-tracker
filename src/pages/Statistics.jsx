@@ -71,30 +71,32 @@ function Statistics() {
         </div>
 
         {/* Распределение по категориям */}
-        {Object.keys(stats.categories).length > 0 && (
-          <div className="stats-section">
-            <h3>🏷️ Распределение по категориям</h3>
-            <div className="categories-list">
-              {Object.entries(stats.categories).map(([category, count]) => {
+{Object.keys(stats.categories).length > 0 && (
+    <div className="stats-section">
+        <h3>🏷️ Распределение по категориям</h3>
+        <div className="categories-list">
+            {Object.entries(stats.categories).map(([category, count]) => {
                 const percentage = Math.round((count / stats.total) * 100);
                 return (
-                  <div key={category} className="category-item">
-                    <div className="category-header">
-                      <span className="category-name">{category}</span>
-                      <span className="category-count">{count} ({percentage}%)</span>
+                    <div key={category} className="category-item">
+                        <div className="category-header">
+                            <span className="category-name">{category}</span>
+                            <span className="category-count">
+                                {count} ({percentage}%)
+                            </span>
+                        </div>
+                        <ProgressBar
+                            progress={percentage}
+                            height={12}
+                            color="#9C27B0"
+                            showPercentage={false}
+                        />
                     </div>
-                    <ProgressBar
-                      progress={percentage}
-                      height={12}
-                      color="#9C27B0"
-                      showPercentage={false}
-                    />
-                  </div>
                 );
-              })}
-            </div>
-          </div>
-        )}
+            })}
+        </div>
+    </div>
+)}
 
         {/* Статусы */}
         <div className="stats-section">
