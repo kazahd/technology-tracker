@@ -1,124 +1,166 @@
-import { useState } from 'react';
-import useLocalStorage from '../hooks/useLocalStorage';
-import DataImportExport from '../components/DataImportExport';
-import './Pages.css';
+// src/pages/Settings.jsx
+import React from 'react';
+import {
+  Box,
+  Paper,
+  Typography,
+  Switch,
+  FormControlLabel,
+  Divider,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemIcon,
+  Button,
+  Alert
+} from '@mui/material';
+import {
+  Brightness4 as DarkModeIcon,
+  Brightness7 as LightModeIcon,
+  Notifications as NotificationsIcon,
+  Language as LanguageIcon,
+  Save as SaveIcon,
+  Restore as RestoreIcon
+} from '@mui/icons-material';
+import { useSettings } from '../App';
 
 function Settings() {
-  const [notifications, setNotifications] = useLocalStorage('notifications', true);
-  const [autoSave, setAutoSave] = useLocalStorage('autoSave', true);
-  const [technologies, setTechnologies] = useLocalStorage('technologies', []);
+  const { settings, updateSettings } = useSettings();
 
-  const handleExport = () => {
-    const data = {
-      exportedAt: new Date().toISOString(),
-      technologies: JSON.parse(localStorage.getItem('technologies') || '[]')
+  const handleChange = (setting) => (event) => {
+    const newSettings = {
+      ...settings,
+      [setting]: event.target.checked
     };
-    
-    const dataStr = JSON.stringify(data, null, 2);
-    const blob = new Blob([dataStr], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `tech-tracker-backup-${new Date().getTime()}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    updateSettings(newSettings);
+  };
+
+  const handleLanguageChange = (lang) => {
+    const newSettings = {
+      ...settings,
+      language: lang
+    };
+    updateSettings(newSettings);
   };
 
   const handleReset = () => {
-    if (confirm('Вы уверены? Это удалит все ваши технологии.')) {
-      localStorage.removeItem('technologies');
-      alert('Данные сброшены. Страница будет перезагружена.');
-      window.location.reload();
+    if (window.confirm('Сбросить все настройки к значениям по умолчанию?')) {
+      const defaultSettings = {
+        darkMode: false,
+        notifications: true,
+        autoSave: true,
+        language: 'ru'
+      };
+      updateSettings(defaultSettings);
     }
   };
 
-    return (
-        <div className="page">
-            <div className="page-header">
-                <h1>⚙️ Настройки</h1>
-                <p className="page-subtitle">Управление приложением</p>
-            </div>
+  return (
+    <Box sx={{ p: 3, maxWidth: 800, mx: 'auto' }}>
+      <Typography variant="h4" gutterBottom>
+        ⚙️ Настройки приложения
+      </Typography>
 
-            <div className="settings-content">
-                {/* Поведение */}
-                <div className="settings-section">
-                    <h3>⚡ Поведение</h3>
-                    
-                    <div className="behavior-settings">
-                        <div className="behavior-item">
-                            <div className="behavior-info">
-                                <div className="behavior-title">Автосохранение</div>
-                                <div className="behavior-description">
-                                    Автоматически сохранять изменения
-                                </div>
-                            </div>
-                            <div className="behavior-control">
-                                <label className="toggle-switch">
-                                    <input
-                                        type="checkbox"
-                                        checked={autoSave}
-                                        onChange={(e) => setAutoSave(e.target.checked)}
-                                    />
-                                    <span className="toggle-slider"></span>
-                                </label>
-                            </div>
-                        </div>
-                        
-                        <div className="behavior-item">
-                            <div className="behavior-info">
-                                <div className="behavior-title">Уведомления</div>
-                                <div className="behavior-description">
-                                    Показывать уведомления о действиях
-                                </div>
-                            </div>
-                            <div className="behavior-control">
-                                <label className="toggle-switch">
-                                    <input
-                                        type="checkbox"
-                                        checked={notifications}
-                                        onChange={(e) => setNotifications(e.target.checked)}
-                                    />
-                                    <span className="toggle-slider"></span>
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+      <Paper sx={{ p: 3, mb: 3 }}>
+        <Typography variant="h6" gutterBottom>
+          Внешний вид
+        </Typography>
+        
+        <List>
+          <ListItem>
+            <ListItemIcon>
+              {settings.darkMode ? <LightModeIcon /> : <DarkModeIcon />}
+            </ListItemIcon>
+            <ListItemText 
+              primary="Темная тема" 
+              secondary="Включить темный режим интерфейса" 
+            />
+            <Switch
+              checked={settings.darkMode}
+              onChange={handleChange('darkMode')}
+              color="primary"
+            />
+          </ListItem>
+        </List>
+      </Paper>
 
-                {/* Импорт и экспорт данных */}
-                <div className="settings-section">
-                    <h3>💾 Импорт и экспорт данных</h3>
-                    <DataImportExport 
-                        technologies={technologies}
-                        setTechnologies={setTechnologies}
-                    />
-                </div>
+      <Paper sx={{ p: 3, mb: 3 }}>
+        <Typography variant="h6" gutterBottom>
+          Уведомления
+        </Typography>
+        
+        <List>
+          <ListItem>
+            <ListItemIcon>
+              <NotificationsIcon />
+            </ListItemIcon>
+            <ListItemText 
+              primary="Показывать уведомления" 
+              secondary="Отображать системные уведомления" 
+            />
+            <Switch
+              checked={settings.notifications}
+              onChange={handleChange('notifications')}
+              color="primary"
+            />
+          </ListItem>
+          
+          <ListItem>
+            <ListItemIcon>
+              <SaveIcon />
+            </ListItemIcon>
+            <ListItemText 
+              primary="Автосохранение" 
+              secondary="Автоматически сохранять изменения" 
+            />
+            <Switch
+              checked={settings.autoSave}
+              onChange={handleChange('autoSave')}
+              color="primary"
+            />
+          </ListItem>
+        </List>
+      </Paper>
 
-                {/* Управление данными */}
-                <div className="settings-section">
-                    <h3>🗑️ Управление данными</h3>
-                    
-                    <div className="setting-item">
-                        <button onClick={handleExport} className="btn btn-outline">
-                            📤 Экспорт данных
-                        </button>
-                        <p className="setting-description">Скачать резервную копию</p>
-                    </div>
+      <Paper sx={{ p: 3, mb: 3 }}>
+        <Typography variant="h6" gutterBottom>
+          Язык интерфейса
+        </Typography>
+        
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          <Button
+            variant={settings.language === 'ru' ? 'contained' : 'outlined'}
+            onClick={() => handleLanguageChange('ru')}
+            startIcon={<LanguageIcon />}
+          >
+            Русский
+          </Button>
+          <Button
+            variant={settings.language === 'en' ? 'contained' : 'outlined'}
+            onClick={() => handleLanguageChange('en')}
+            startIcon={<LanguageIcon />}
+          >
+            English
+          </Button>
+        </Box>
+      </Paper>
 
-                    <div className="setting-item">
-                        <button onClick={handleReset} className="btn btn-danger">
-                            🗑️ Сбросить данные
-                        </button>
-                        <p className="setting-description">
-                            Удалить все технологии
-                        </p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
+      <Alert severity="info" sx={{ mb: 3 }}>
+        Настройки автоматически сохраняются в вашем браузере и применяются сразу.
+      </Alert>
+
+      <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+        <Button
+          startIcon={<RestoreIcon />}
+          onClick={handleReset}
+          variant="outlined"
+          color="secondary"
+        >
+          Сбросить настройки
+        </Button>
+      </Box>
+    </Box>
+  );
 }
 
 export default Settings;

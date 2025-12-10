@@ -135,11 +135,8 @@ function Technologies() {
                     searchedTechnologies.map(tech => (
                         <div key={tech.id} className="technology-card-wrapper">
                             <TechnologyCard
-                                id={tech.id}
-                                title={tech.title}
-                                description={tech.description}
-                                status={tech.status}
-                                onStatusChange={updateStatus} // Исправлено: реальная функция
+    technology={tech}
+    onStatusChange={updateStatus}
                             />
                             
                             <TechnologyResources 
