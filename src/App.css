@@ -299,3 +299,26 @@ main {
   border-radius: 0;
   margin-top: 0;
 }
+
+:root {
+  --color-pink: #ec4899;
+  --color-pink-dark: #db2777;
+  --color-pink-light: #f472b6;
+}
+
+.main-navigation {
+  background: var(--color-pink);
+}
+
+.progress-header {
+  background: var(--color-pink);
+}
+
+.btn-primary {
+  background: #ec4899; /* Розовый цвет для основных кнопок */
+  /* ... остальной код без изменений ... */
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: #db2777; /* Более темный розовый при наведении */
+}

@@ -9,7 +9,7 @@
 .resources-toggle {
   width: 100%;
   padding: 12px 15px;
-  background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+  background: #ec4899;
   color: white;
   border: none;
   text-align: left;
@@ -22,7 +22,7 @@
 }
 
 .resources-toggle:hover {
-  background: linear-gradient(135deg, #5a0db5 0%, #1c68e8 100%);
+  background: #db2777;
 }
 
 .toggle-icon {
