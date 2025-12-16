@@ -1,6 +1,6 @@
 // components/RoadmapImporter.jsx
 import { useState } from 'react';
-import useTechnologiesApi from '../hooks/useTechnologiesApi'; // Используем API хук
+import useTechnologiesApi from '../hooks/useTechnologiesApi';
 import './RoadmapImporter.css';
 
 function RoadmapImporter() {
@@ -11,11 +11,13 @@ function RoadmapImporter() {
         try {
             setImporting(true);
             
-            // Имитация загрузки дорожной карты из API (как в ТЗ Шаг 2)
-            const response = await fetch('https://api.example.com/roadmaps/frontend');
-            if (!response.ok) throw new Error('Не удалось загрузить дорожную карту');
-
-            // Мок данные, так как API не существует
+            // УДАЛИТЬ ЭТУ СТРОКУ:
+            // const response = await fetch('https://api.example.com/roadmaps/frontend');
+            
+            // ВМЕСТО ЭТОГО использовать мок-данные:
+            await new Promise(resolve => setTimeout(resolve, 1500));
+            
+            // Мок данные (как было в коде)
             const roadmapData = {
                 technologies: [
                     {
@@ -48,7 +50,7 @@ function RoadmapImporter() {
                 ]
             };
 
-            // Добавляем каждую технологию из дорожной карты (как в ТЗ)
+            // Добавляем каждую технологию
             let importedCount = 0;
             for (const tech of roadmapData.technologies) {
                 await addTechnology(tech);
@@ -58,7 +60,7 @@ function RoadmapImporter() {
             alert(`✅ Успешно импортировано ${importedCount} технологий из API`);
 
         } catch (err) {
-            // В реальном приложении здесь будет обработка ошибки API
+            // Теперь здесь будет реальная ошибка (если addTechnology сломается)
             alert(`❌ Ошибка импорта: ${err.message}`);
         } finally {
             setImporting(false);
