@@ -364,7 +364,7 @@ function App() {
                 
                 
                 {/* Компонент импорта дорожных карт из API (Шаг 2 из ТЗ) */}
-                {settings.useApi && <RoadmapImporter />}
+                
 
                 {/* Показываем ошибку если есть */}
                 {error && settings.useApi && (
