@@ -1,10 +1,12 @@
-// src/components/NotificationSystem.jsx
-import React from 'react';
+import React, { useContext } from 'react';
 import {
   Snackbar,
   Alert,
   IconButton,
-  Box
+  Box,
+  Button,
+  useMediaQuery,
+  useTheme
 } from '@mui/material';
 import {
   Close as CloseIcon,
@@ -13,28 +15,17 @@ import {
   Warning as WarningIcon,
   Info as InfoIcon
 } from '@mui/icons-material';
+import { useNotifications } from '../context/NotificationContext';
 
 const NotificationSystem = () => {
-  const [notifications, setNotifications] = React.useState([
-    {
-      id: 1,
-      message: 'Технология "React Hooks" успешно добавлена',
-      type: 'success',
-      open: true
-    },
-    {
-      id: 2,
-      message: 'Не удалось обновить статус технологии',
-      type: 'error',
-      open: true
-    },
-    {
-      id: 3,
-      message: 'Рекомендуется добавить ресурсы для изучения',
-      type: 'warning',
-      open: true
-    }
-  ]);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const {
+    notifications,
+    removeNotification,
+    clearAll,
+    settings
+  } = useNotifications();
 
   const getIcon = (type) => {
     switch (type) {
@@ -46,69 +37,89 @@ const NotificationSystem = () => {
     }
   };
 
-  const handleClose = (id) => {
-    setNotifications(prev =>
-      prev.map(notification =>
-        notification.id === id
-          ? { ...notification, open: false }
-          : notification
-      )
-    );
-    
-    // Полное удаление через 500ms после закрытия
-    setTimeout(() => {
-      setNotifications(prev => prev.filter(n => n.id !== id));
-    }, 500);
-  };
-
-  const addNotification = (message, type = 'info') => {
-    const newNotification = {
-      id: Date.now(),
-      message,
-      type,
-      open: true
-    };
-    setNotifications(prev => [newNotification, ...prev.slice(0, 4)]); // Максимум 5 уведомлений
+  const handleClose = (id, reason) => {
+    if (reason === 'clickaway') return;
+    removeNotification(id);
   };
 
   const handleCloseAll = () => {
-    setNotifications(prev => prev.map(n => ({ ...n, open: false })));
-    setTimeout(() => {
-      setNotifications([]);
-    }, 500);
+    clearAll();
   };
 
+  if (!settings.enabled || notifications.length === 0) {
+    return null;
+  }
+
   return (
-    <Box sx={{ position: 'fixed', bottom: 16, right: 16, zIndex: 9999 }}>
-      {notifications.map((notification) => (
+    <Box sx={{
+      position: 'fixed',
+      bottom: isMobile ? 8 : 16,
+      right: isMobile ? 8 : 16,
+      left: isMobile ? 8 : 'auto',
+      zIndex: theme.zIndex.snackbar,
+      width: isMobile ? 'calc(100% - 16px)' : 'auto',
+      maxWidth: isMobile ? '100%' : 450
+    }}>
+      {notifications.map((notification, index) => (
         <Snackbar
           key={notification.id}
           open={notification.open}
-          autoHideDuration={6000}
-          onClose={() => handleClose(notification.id)}
-          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-          sx={{ mb: 1 }}
+          autoHideDuration={settings.autoClose ? settings.duration : null}
+          onClose={(event, reason) => handleClose(notification.id, reason)}
+          anchorOrigin={{
+            vertical: isMobile ? 'bottom' : 'bottom',
+            horizontal: isMobile ? 'center' : 'right'
+          }}
+          sx={{ 
+            mb: 1,
+            // На мобильных показываем только последнее уведомление
+            display: isMobile && index > 0 ? 'none' : 'block'
+          }}
+          ClickAwayListenerProps={{
+            mouseEvent: false,
+            touchEvent: false
+          }}
         >
           <Alert
             severity={notification.type}
             variant="filled"
             icon={getIcon(notification.type)}
             onClose={() => handleClose(notification.id)}
-            sx={{ 
+            sx={{
               width: '100%',
-              minWidth: 300,
-              maxWidth: 450,
-              alignItems: 'center'
+              alignItems: 'center',
+              '& .MuiAlert-message': {
+                flex: 1
+              }
             }}
             action={
-              <IconButton
-                size="small"
-                aria-label="close"
-                color="inherit"
-                onClick={() => handleClose(notification.id)}
-              >
-                <CloseIcon fontSize="small" />
-              </IconButton>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                {notification.action && (
+                  <Button
+                    color="inherit"
+                    size="small"
+                    onClick={() => {
+                      notification.action.onClick();
+                      removeNotification(notification.id);
+                    }}
+                    sx={{ 
+                      minWidth: 'auto',
+                      fontSize: '0.75rem',
+                      textTransform: 'none'
+                    }}
+                  >
+                    {notification.action.label}
+                  </Button>
+                )}
+                <IconButton
+                  size="small"
+                  aria-label="close"
+                  color="inherit"
+                  onClick={() => handleClose(notification.id)}
+                >
+                  <CloseIcon fontSize="small" />
+                </IconButton>
+              </Box>
             }
           >
             {notification.message}
@@ -116,12 +127,16 @@ const NotificationSystem = () => {
         </Snackbar>
       ))}
       
-      {notifications.length > 0 && (
+      {notifications.length > 1 && !isMobile && (
         <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 1 }}>
           <IconButton
             size="small"
             onClick={handleCloseAll}
-            sx={{ color: 'text.secondary' }}
+            sx={{ 
+              color: 'text.secondary',
+              bgcolor: 'background.paper',
+              boxShadow: 1
+            }}
             title="Закрыть все уведомления"
           >
             <CloseIcon />

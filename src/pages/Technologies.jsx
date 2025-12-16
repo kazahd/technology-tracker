@@ -1,6 +1,6 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
-import useTechnologies from '../hooks/useTechnologies'; // Изменяем на useTechnologies
+import useTechnologies from '../hooks/useTechnologies';
 import TechnologyCard from '../components/TechnologyCard';
 import TechnologyNotes from '../components/TechnologyNotes';
 import TechnologyFilter from '../components/TechnologyFilter';
@@ -8,230 +8,294 @@ import RoadmapImporter from '../components/RoadmapImporter';
 import TechnologySearch from '../components/TechnologySearch';
 import TechnologyResources from '../components/TechnologyResources';
 import BulkStatusEditor from '../components/BulkStatusEditor';
+import { useNotification } from '../hooks/useNotification';
 import './Pages.css';
 
-function Technologies() {
-    // Используем обычный хук useTechnologies вместо API
-    const { technologies, updateStatus, updateNotes, updateStatusBulk } = useTechnologies();
-    const [activeFilter, setActiveFilter] = useState('all');
-    const [searchQuery, setSearchQuery] = useState('');
-    const [apiSearchResults, setApiSearchResults] = useState([]);
+function Technologies({ 
+  technologies: propTechnologies, 
+  updateTechnologyStatus, 
+  updateTechnologyNotes, 
+  updateStatusBulk,
+  addTechnology: propAddTechnology 
+}) {
+  const navigate = useNavigate();
+  const { showSuccess } = useNotification();
+  
+  // Используем переданные пропсы или локальный хук
+  const { 
+    technologies: hookTechnologies, 
+    updateStatus: hookUpdateStatus, 
+    updateNotes: hookUpdateNotes, 
+    updateStatusBulk: hookUpdateStatusBulk,
+    addTechnology: hookAddTechnology 
+  } = useTechnologies();
+  
+  // Определяем, какие данные использовать
+  const technologies = propTechnologies || hookTechnologies;
+  const updateStatus = updateTechnologyStatus || hookUpdateStatus;
+  const updateNotes = updateTechnologyNotes || hookUpdateNotes;
+  const bulkUpdateStatus = updateStatusBulk || hookUpdateStatusBulk;
+  const addTechnology = propAddTechnology || hookAddTechnology;
+  
+  const [activeFilter, setActiveFilter] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [apiSearchResults, setApiSearchResults] = useState([]);
+  const [showBulkEditor, setShowBulkEditor] = useState(false);
+  const [selectedTechs, setSelectedTechs] = useState([]);
+  
+  const filteredTechnologies = activeFilter === 'all' 
+    ? technologies 
+    : technologies.filter(tech => tech.status === activeFilter);
 
-    const filteredTechnologies = activeFilter === 'all' 
-        ? technologies 
-        : technologies.filter(tech => tech.status === activeFilter);
+  const searchedTechnologies = filteredTechnologies.filter(tech =>
+    tech.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    tech.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (tech.notes && tech.notes.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
 
-    const searchedTechnologies = filteredTechnologies.filter(tech =>
-        tech.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        tech.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (tech.notes && tech.notes.toLowerCase().includes(searchQuery.toLowerCase()))
-    );
+  const handleApiSearchResults = (results) => {
+    setApiSearchResults(results);
+  };
 
-    const handleApiSearchResults = (results) => {
-        setApiSearchResults(results);
-    };
-
-    // Нужно получить addTechnology из хука, если используем useTechnologiesApi
-    // Но если переходим на useTechnologies, нужно обновить RoadmapImporter
+  // Функция для изменения статуса одной технологии
+  const handleStatusChange = (id, newStatus) => {
+    const tech = technologies.find(t => t.id === id);
+    if (!tech) return;
     
-    // Функция для массового обновления статусов
-    const handleBulkStatusUpdate = (techIds, newStatus) => {
-        updateStatusBulk(techIds, newStatus);
-    };
-
-    // Убираем состояния loading и error, т.к. useTechnologies работает мгновенно
+    // Обновляем статус
+    if (updateStatus) {
+      updateStatus(id, newStatus);
+    }
     
-    // Обновляем RoadmapImporter чтобы использовать правильные функции
-    // Нужно обновить RoadmapImporter.jsx или создать его локальную версию
-
-    return (
-        <div className="page">
-            <div className="page-header">
-                <h1>📚 Все технологии</h1>
-                <div className="page-actions">
-                    <Link to="/add" className="btn btn-primary">
-                        ➕ Добавить технологию
-                    </Link>
-                    <button 
-                        onClick={() => window.location.reload()} 
-                        className="btn btn-outline"
-                    >
-                        🔄 Обновить страницу
-                    </button>
-                </div>
-            </div>
-
-            {/* Компонент массового редактирования */}
-            <BulkStatusEditor 
-                technologies={technologies}
-                onUpdateStatusBulk={handleBulkStatusUpdate}
-            />
-
-            {/* Обновленный RoadmapImporter - нужны локальные функции */}
-            <RoadmapImporterLocal 
-                technologies={technologies}
-                addTechnology={addTechnologyLocal}
-            />
-
-            {/* Поиск технологий в API с debounce */}
-            <TechnologySearch onSearch={handleApiSearchResults} />
-
-            {/* Результаты поиска из API */}
-            {apiSearchResults.length > 0 && (
-                <div className="api-results-section">
-                    <h3>🔍 Результаты поиска из API</h3>
-                    <div className="api-results">
-                        {apiSearchResults.map(tech => (
-                            <div key={tech.id} className="result-item">
-                                <h4>{tech.title}</h4>
-                                <p>{tech.description}</p>
-                                <button 
-                                    onClick={() => handleAddFromApiLocal(tech)}
-                                    className="add-result-btn"
-                                >
-                                    📥 Добавить в трекер
-                                </button>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            )}
-
-            {/* Фильтры и локальный поиск */}
-            <div className="filters-section">
-                <TechnologyFilter 
-                    activeFilter={activeFilter}
-                    setActiveFilter={setActiveFilter}
-                />
-                
-                <div className="search-box">
-                    <input
-                        type="text"
-                        placeholder="🔍 Поиск по названию, описанию или заметкам..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="search-input"
-                    />
-                    <span className="search-count">Найдено: {searchedTechnologies.length}</span>
-                </div>
-            </div>
-
-            {/* Список технологий */}
-            <div className="technologies-list">
-                {searchedTechnologies.length === 0 ? (
-                    <div className="empty-state">
-                        <h3>📭 Технологий не найдено</h3>
-                        <p>
-                            {searchQuery || activeFilter !== 'all' 
-                                ? 'Попробуйте изменить поисковый запрос или фильтр'
-                                : 'Технологий пока нет'
-                            }
-                        </p>
-                        <Link to="/add" className="btn btn-primary">
-                            Добавить первую технологию
-                        </Link>
-                    </div>
-                ) : (
-                    searchedTechnologies.map(tech => (
-                        <div key={tech.id} className="technology-card-wrapper">
-                            <TechnologyCard
-    technology={tech}
-    onStatusChange={updateStatus}
-                            />
-                            
-                            <TechnologyResources 
-                                technologyId={tech.id}
-                                technologyTitle={tech.title}
-                            />
-                            
-                            <TechnologyNotes
-                                notes={tech.notes}
-                                techId={tech.id}
-                                onNotesChange={updateNotes} // Исправлено: реальная функция
-                            />
-                            
-                            <div className="card-actions">
-                                <Link to={`/technology/${tech.id}`} className="btn btn-outline">
-                                    📖 Подробнее
-                                </Link>
-                            </div>
-                        </div>
-                    ))
-                )}
-            </div>
-        </div>
+    // Тексты статусов на русском
+    const statusText = {
+      'completed': 'Завершено',
+      'in-progress': 'В процессе', 
+      'not-started': 'Не начато'
+    };
+    
+    const statusTextWithEmoji = {
+      'completed': '✅ Завершено',
+      'in-progress': '🔄 В процессе', 
+      'not-started': '⏳ Не начато'
+    };
+    
+    // Показываем уведомление
+    showSuccess(
+      `Статус "${tech.title}" изменен на "${statusText[newStatus]}"`,
+      {
+        label: 'Открыть',
+        onClick: () => navigate(`/technology/${id}`)
+      }
     );
-}
+  };
 
-// Локальная функция для добавления технологии (временное решение)
-const addTechnologyLocal = (techData) => {
-    // Эту функцию нужно интегрировать с useTechnologies
-    // Пока что оставим заглушку
-    console.log('Добавление технологии:', techData);
-    alert(`Технология "${techData.title}" будет добавлена после интеграции с хуком`);
-};
+  // Функция для массового обновления статусов
+  const handleBulkStatusUpdate = (techIds, newStatus) => {
+    if (!bulkUpdateStatus) {
+      showError('Функция массового обновления недоступна');
+      return;
+    }
+    
+    bulkUpdateStatus(techIds, newStatus);
+    
+    const statusText = {
+      'completed': 'завершено',
+      'in-progress': 'в процессе', 
+      'not-started': 'не начато'
+    };
+    
+    showSuccess(
+      `Статус ${techIds.length} технологий изменен на "${statusText[newStatus]}"`,
+      {
+        label: 'Закрыть',
+        onClick: () => setShowBulkEditor(false)
+      }
+    );
+    
+  
+  };
 
-// Локальная обработка добавления из API
-const handleAddFromApiLocal = (tech) => {
-    addTechnologyLocal({
-        title: tech.title,
-        description: tech.description,
-        category: tech.category || 'other',
-        status: 'not-started',
-        notes: tech.notes || ''
+  // Функция для добавления технологии из API результатов
+  const handleAddFromApi = (apiTech) => {
+    const newTech = {
+      title: apiTech.title,
+      description: apiTech.description,
+      category: apiTech.category || 'other',
+      status: 'not-started',
+      notes: apiTech.notes || '',
+      resources: apiTech.resources || [],
+      difficulty: apiTech.difficulty || 'beginner'
+    };
+    
+    if (addTechnology) {
+      addTechnology(newTech);
+      showSuccess(`Технология "${apiTech.title}" добавлена из API`);
+    }
+  };
+
+  // Функция для выбора/снятия выбора технологии
+  const toggleTechSelection = (techId) => {
+    setSelectedTechs(prev => {
+      if (prev.includes(techId)) {
+        return prev.filter(id => id !== techId);
+      } else {
+        return [...prev, techId];
+      }
     });
-};
+  };
 
-// Локальный компонент RoadmapImporter
-function RoadmapImporterLocal({ technologies, addTechnology }) {
-    const [importing, setImporting] = useState(false);
+  // Функция для обновления заметок
+  const handleNotesChange = (techId, newNotes) => {
+    if (updateNotes) {
+      updateNotes(techId, newNotes);
+      const tech = technologies.find(t => t.id === techId);
+      if (tech) {
+        showSuccess(`Заметки для "${tech.title}" сохранены`);
+      }
+    }
+  };
 
-    const handleImportRoadmap = async () => {
-        try {
-            setImporting(true);
-            await new Promise(resolve => setTimeout(resolve, 1500));
-            
-            const roadmapData = {
-                technologies: [
-                    {
-                        title: 'JavaScript ES6+',
-                        description: 'Современные возможности JavaScript',
-                        category: 'frontend',
-                        difficulty: 'beginner',
-                        resources: ['https://learn.javascript.ru', 'https://developer.mozilla.org/en-US/docs/Web/JavaScript'],
-                        status: 'not-started',
-                        notes: 'Важно изучить async/await, promises, деструктуризацию'
-                    },
-                    // ... остальные технологии
-                ]
-            };
-
-            for (const tech of roadmapData.technologies) {
-                await addTechnology(tech);
-            }
-
-            alert(`Успешно импортировано ${roadmapData.technologies.length} технологий`);
-        } catch (err) {
-            alert(`Ошибка импорта: ${err.message}`);
-        } finally {
-            setImporting(false);
-        }
-    };
-
-    return (
-        <div className="roadmap-importer">
-            <h3>📋 Импорт дорожной карты</h3>
-            <div className="import-actions">
-                <button
-                    onClick={handleImportRoadmap}
-                    disabled={importing}
-                    className="import-button"
-                >
-                    {importing ? 'Импорт...' : '📥 Импорт пример дорожной карты'}
-                </button>
-            </div>
+  return (
+    <div className="page">
+      <div className="page-header">
+        <h1>📚 Все технологии</h1>
+        <div className="page-actions">
+          <Link to="/add" className="btn btn-primary">
+            ➕ Добавить технологию
+          </Link>
+          
+          {technologies.length > 0 && (
+            <button 
+              onClick={() => setShowBulkEditor(!showBulkEditor)}
+              className="btn btn-outline"
+            >
+              {showBulkEditor ? '✖️ Закрыть редактор' : '🔄 Массовое редактирование'}
+            </button>
+          )}
+          
+          <button 
+            onClick={() => window.location.reload()} 
+            className="btn btn-outline"
+          >
+            🔄 Обновить страницу
+          </button>
         </div>
-    );
+      </div>
+
+      {/* Массовый редактор статусов */}
+      {showBulkEditor && (
+        <BulkStatusEditor 
+          technologies={technologies}
+          selectedTechs={selectedTechs}
+          onClose={() => setShowBulkEditor(false)}
+          updateStatusBulk={handleBulkStatusUpdate}
+        />
+      )}
+
+      {/* Поиск технологий в API */}
+      <TechnologySearch onSearch={handleApiSearchResults} />
+
+      {/* Результаты поиска из API */}
+      {apiSearchResults.length > 0 && (
+        <div className="api-results-section">
+          <h3>🔍 Результаты поиска из API</h3>
+          <div className="api-results">
+            {apiSearchResults.map(tech => (
+              <div key={tech.id || tech.title} className="result-item">
+                <h4>{tech.title}</h4>
+                <p>{tech.description}</p>
+                <button 
+                  onClick={() => handleAddFromApi(tech)}
+                  className="btn btn-outline"
+                >
+                  📥 Добавить в трекер
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Фильтры и локальный поиск */}
+      <div className="filters-section">
+        <TechnologyFilter 
+          activeFilter={activeFilter}
+          setActiveFilter={setActiveFilter}
+        />
+        
+        <div className="search-box">
+          <input
+            type="text"
+            placeholder="🔍 Поиск по названию, описанию или заметкам..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="search-input"
+          />
+          <span className="search-count">Найдено: {searchedTechnologies.length}</span>
+        </div>
+      </div>
+
+      {/* Список технологий */}
+      <div className="technologies-list">
+        {searchedTechnologies.length === 0 ? (
+          <div className="empty-state">
+            <h3>📭 Технологий не найдено</h3>
+            <p>
+              {searchQuery || activeFilter !== 'all' 
+                ? 'Попробуйте изменить поисковый запрос или фильтр'
+                : 'Технологий пока нет'
+              }
+            </p>
+            <Link to="/add" className="btn btn-primary">
+              Добавить первую технологию
+            </Link>
+          </div>
+        ) : (
+          searchedTechnologies.map(tech => (
+            <div key={tech.id} className="technology-card-wrapper">
+              {/* Чекбокс для выбора (только при активном массовом редакторе) */}
+              {showBulkEditor && (
+                <div className="tech-selector">
+                  <input
+                    type="checkbox"
+                    checked={selectedTechs.includes(tech.id)}
+                    onChange={() => toggleTechSelection(tech.id)}
+                    id={`select-${tech.id}`}
+                  />
+                  <label htmlFor={`select-${tech.id}`}>
+                    Выбрать для массового редактирования
+                  </label>
+                </div>
+              )}
+              
+              <TechnologyCard
+                technology={tech}
+                onStatusChange={(id, newStatus) => handleStatusChange(id, newStatus)}
+              />
+              
+              <TechnologyResources 
+                technologyId={tech.id}
+                technologyTitle={tech.title}
+              />
+              
+              <TechnologyNotes
+                notes={tech.notes}
+                techId={tech.id}
+                onNotesChange={handleNotesChange}
+              />
+              
+              <div className="card-actions">
+                <Link to={`/technology/${tech.id}`} className="btn btn-outline">
+                  📖 Подробнее
+                </Link>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
 }
 
 export default Technologies;

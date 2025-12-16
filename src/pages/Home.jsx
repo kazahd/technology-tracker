@@ -1,5 +1,22 @@
 // pages/Home.jsx
 import { Link } from 'react-router-dom';
+import {
+  Card,
+  CardContent,
+  Typography,
+  Chip,
+  Box,
+  Button,
+  IconButton,
+  Tooltip,
+  LinearProgress
+} from '@mui/material';
+import {
+  CheckCircle as CheckCircleIcon,
+  PlayCircle as PlayCircleIcon,
+  AccessTime as AccessTimeIcon,
+  MoreVert as MoreVertIcon
+} from '@mui/icons-material';
 import ProgressHeader from '../components/ProgressHeader';
 import QuickActions from '../components/QuickActions';
 import useTechnologies from '../hooks/useTechnologies';
@@ -11,7 +28,8 @@ function Home() {
     markAllCompleted, 
     resetAll, 
     pickRandomTechnology,
-    progress 
+    progress,
+    updateStatus
   } = useTechnologies();
 
   const recentTechnologies = technologies.slice(0, 3);
@@ -26,13 +44,50 @@ function Home() {
     }
   };
 
-  // Функция для получения эмодзи статуса
-  const getStatusEmoji = (status) => {
+  // Функция для получения цвета статуса
+  const getStatusColor = (status) => {
     switch(status) {
-      case 'completed': return '✅';
-      case 'in-progress': return '🔄';
-      case 'not-started': return '⏳';
-      default: return '';
+      case 'completed': return 'success';
+      case 'in-progress': return 'warning';
+      case 'not-started': return 'default';
+      default: return 'default';
+    }
+  };
+
+  // Функция для получения следующего статуса
+  const getNextStatus = (currentStatus) => {
+    const statusOrder = ['not-started', 'in-progress', 'completed'];
+    const currentIndex = statusOrder.indexOf(currentStatus);
+    const nextIndex = (currentIndex + 1) % statusOrder.length;
+    return statusOrder[nextIndex];
+  };
+
+  // Обработчик изменения статуса
+  const handleStatusChange = (techId, currentStatus) => {
+    const nextStatus = getNextStatus(currentStatus);
+    updateStatus(techId);
+    
+    // Можно добавить уведомление здесь
+    console.log(`Статус изменен на: ${nextStatus}`);
+  };
+
+  // Функция для получения иконки действия
+  const getActionIcon = (status) => {
+    switch(status) {
+      case 'not-started': return <PlayCircleIcon />;
+      case 'in-progress': return <CheckCircleIcon />;
+      case 'completed': return <AccessTimeIcon />;
+      default: return <MoreVertIcon />;
+    }
+  };
+
+  // Текст для кнопки действия
+  const getActionText = (status) => {
+    switch(status) {
+      case 'not-started': return 'Начать';
+      case 'in-progress': return 'Завершить';
+      case 'completed': return 'Сбросить';
+      default: return 'Изменить';
     }
   };
 
@@ -44,6 +99,19 @@ function Home() {
       </div>
 
       <div className="home-content">
+        {/* Прогресс */}
+        <Box sx={{ mb: 4 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+            <Typography variant="h6">Общий прогресс</Typography>
+            <Typography variant="h6">{progress}%</Typography>
+          </Box>
+          <LinearProgress 
+            variant="determinate" 
+            value={progress} 
+            sx={{ height: 10, borderRadius: 5 }}
+          />
+        </Box>
+
         {/* Быстрый доступ */}
         <div className="quick-access">
           <h2>⚡ Быстрый доступ</h2>
@@ -66,9 +134,6 @@ function Home() {
           </div>
         </div>
 
-        {/* Прогресс */}
-        <ProgressHeader technologies={technologies} />
-
         {/* Быстрые действия */}
         <QuickActions 
           technologies={technologies}
@@ -85,19 +150,58 @@ function Home() {
           </div>
           
           {recentTechnologies.length > 0 ? (
-            <div className="technologies-grid">
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               {recentTechnologies.map(tech => (
-                <Link to={`/technology/${tech.id}`} key={tech.id} className="technology-card-link">
-                  <div className={`technology-card-preview ${tech.status}`}>
-                    <h3>{tech.title}</h3>
-                    <p>{tech.description.substring(0, 100)}...</p>
-                    <div className="status-badge">
-                      {getStatusEmoji(tech.status)} {getStatusInRussian(tech.status)}
-                    </div>
-                  </div>
-                </Link>
+                <Card key={tech.id} variant="outlined" sx={{ p: 2 }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <Box sx={{ flex: 1 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                        <Typography variant="h6" component="h3">
+                          {tech.title}
+                        </Typography>
+                        <Chip 
+                          label={getStatusInRussian(tech.status)}
+                          color={getStatusColor(tech.status)}
+                          size="small"
+                        />
+                      </Box>
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                        {tech.description.substring(0, 120)}...
+                      </Typography>
+                    </Box>
+                    
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Tooltip title={getActionText(tech.status)}>
+                        <IconButton
+                          color={getStatusColor(tech.status)}
+                          onClick={() => handleStatusChange(tech.id, tech.status)}
+                          sx={{ 
+                            border: '1px solid',
+                            borderColor: getStatusColor(tech.status) === 'default' ? '#ccc' : undefined
+                          }}
+                        >
+                          {getActionIcon(tech.status)}
+                        </IconButton>
+                      </Tooltip>
+                      
+                      
+                    </Box>
+                  </Box>
+                  
+                  {/* Дополнительная информация */}
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2, pt: 2, borderTop: '1px solid #eee' }}>
+                    <Typography variant="caption" color="text.secondary">
+                      Категория: {tech.category || 'frontend'}
+                    </Typography>
+                    {tech.notes && (
+                      <Typography variant="caption" color="text.secondary">
+                        Заметки: {tech.notes.substring(0, 30)}...
+                      </Typography>
+                    )}
+                  </Box>
+                </Card>
               ))}
-            </div>
+            </Box>
           ) : (
             <div className="empty-state">
               <p>Технологий пока нет. <Link to="/add">Добавьте первую!</Link></p>

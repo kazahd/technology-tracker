@@ -1,21 +1,24 @@
-// components/RoadmapImporter.jsx (исправленная версия)
+// components/RoadmapImporter.jsx
 import { useState } from 'react';
-import useTechnologies from '../hooks/useTechnologies'; // Изменяем импорт
+import useTechnologiesApi from '../hooks/useTechnologiesApi'; // Используем API хук
 import './RoadmapImporter.css';
 
 function RoadmapImporter() {
-    const { technologies, setTechnologies } = useTechnologies(); // Используем обычный хук
+    const { addTechnology, loading, error } = useTechnologiesApi();
     const [importing, setImporting] = useState(false);
 
     const handleImportRoadmap = async () => {
         try {
             setImporting(true);
-            await new Promise(resolve => setTimeout(resolve, 1500));
             
+            // Имитация загрузки дорожной карты из API (как в ТЗ Шаг 2)
+            const response = await fetch('https://api.example.com/roadmaps/frontend');
+            if (!response.ok) throw new Error('Не удалось загрузить дорожную карту');
+
+            // Мок данные, так как API не существует
             const roadmapData = {
                 technologies: [
                     {
-                        id: Date.now() + 1,
                         title: 'JavaScript ES6+',
                         description: 'Современные возможности JavaScript',
                         category: 'frontend',
@@ -25,7 +28,6 @@ function RoadmapImporter() {
                         notes: 'Важно изучить async/await, promises, деструктуризацию'
                     },
                     {
-                        id: Date.now() + 2,
                         title: 'CSS Grid & Flexbox',
                         description: 'Современные техники верстки',
                         category: 'frontend',
@@ -35,7 +37,6 @@ function RoadmapImporter() {
                         notes: 'Основа современной верстки'
                     },
                     {
-                        id: Date.now() + 3,
                         title: 'Express.js',
                         description: 'Фреймворк для Node.js',
                         category: 'backend',
@@ -47,12 +48,17 @@ function RoadmapImporter() {
                 ]
             };
 
-            // Добавляем к существующим технологиям
-            const updatedTechnologies = [...technologies, ...roadmapData.technologies];
-            setTechnologies(updatedTechnologies);
+            // Добавляем каждую технологию из дорожной карты (как в ТЗ)
+            let importedCount = 0;
+            for (const tech of roadmapData.technologies) {
+                await addTechnology(tech);
+                importedCount++;
+            }
 
-            alert(`✅ Успешно импортировано ${roadmapData.technologies.length} технологий`);
+            alert(`✅ Успешно импортировано ${importedCount} технологий из API`);
+
         } catch (err) {
+            // В реальном приложении здесь будет обработка ошибки API
             alert(`❌ Ошибка импорта: ${err.message}`);
         } finally {
             setImporting(false);
@@ -62,19 +68,26 @@ function RoadmapImporter() {
     return (
         <div className="roadmap-importer">
             <h3>📋 Импорт дорожной карты из API</h3>
+            
             <div className="import-actions">
                 <button
                     onClick={handleImportRoadmap}
-                    disabled={importing}
+                    disabled={importing || loading}
                     className="import-button"
                     aria-label="Импортировать пример дорожной карты"
                 >
                     {importing ? '⏳ Импорт...' : '📥 Импорт пример дорожной карты'}
                 </button>
                 <p className="import-hint">
-                    Импортирует пример технологий с ресурсами и дедлайнами
+                    Импортирует пример технологий из внешнего API с ресурсами
                 </p>
             </div>
+
+            {error && (
+                <div className="error-message">
+                    Ошибка API: {error}
+                </div>
+            )}
         </div>
     );
 }

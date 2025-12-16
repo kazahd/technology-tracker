@@ -12,38 +12,46 @@ import {
   ListItemText,
   ListItemIcon,
   Button,
-  Alert
+  Alert,
+  Stack
 } from '@mui/material';
 import {
   Brightness4 as DarkModeIcon,
   Brightness7 as LightModeIcon,
   Notifications as NotificationsIcon,
-  Language as LanguageIcon,
-  Save as SaveIcon,
-  Restore as RestoreIcon
+  Restore as RestoreIcon,
+  Backup as BackupIcon,
+  CloudUpload as CloudUploadIcon,
+  DeleteForever as DeleteForeverIcon,
+  Save as SaveIcon
 } from '@mui/icons-material';
-import { useSettings } from '../App';
+import { useNotifications } from '../context/NotificationContext';
 
-function Settings() {
-  const { settings, updateSettings } = useSettings();
+function Settings({ 
+  settings, 
+  setSettings, 
+  technologies, 
+  updateTechnologies, 
+  initialTechnologies,
+  toggleTheme
+}) {
+  const { settings: notificationSettings } = useNotifications();
 
-  const handleChange = (setting) => (event) => {
-    const newSettings = {
-      ...settings,
+  // Обновленный обработчик для темы
+  const handleThemeChange = (event) => {
+    // Просто вызываем toggleTheme, который уже обновит settings в App.jsx
+    toggleTheme();
+  };
+
+  // Отдельный обработчик для других настроек
+  const handleSettingChange = (setting) => (event) => {
+    setSettings(prev => ({
+      ...prev,
       [setting]: event.target.checked
-    };
-    updateSettings(newSettings);
+    }));
   };
 
-  const handleLanguageChange = (lang) => {
-    const newSettings = {
-      ...settings,
-      language: lang
-    };
-    updateSettings(newSettings);
-  };
-
-  const handleReset = () => {
+  const handleResetSettings = () => {
     if (window.confirm('Сбросить все настройки к значениям по умолчанию?')) {
       const defaultSettings = {
         darkMode: false,
@@ -51,8 +59,95 @@ function Settings() {
         autoSave: true,
         language: 'ru'
       };
-      updateSettings(defaultSettings);
+      setSettings(defaultSettings);
+      
+      // Если текущая тема темная, переключаем на светлую
+      if (settings.darkMode) {
+        toggleTheme();
+      }
     }
+  };
+
+  const handleExportData = () => {
+    const settingsData = JSON.parse(localStorage.getItem('app-settings') || '{}');
+    
+    const exportData = {
+      version: '1.0',
+      exportedAt: new Date().toISOString(),
+      technologies,
+      settings: settingsData
+    };
+
+    const dataStr = JSON.stringify(exportData, null, 2);
+    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+    
+    const exportFileDefaultName = `technology-tracker-backup-${new Date().toISOString().split('T')[0]}.json`;
+    
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', exportFileDefaultName);
+    linkElement.click();
+    
+    alert(`✅ Данные успешно экспортированы! Файл: ${exportFileDefaultName}`);
+  };
+
+  const handleImportData = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    
+    input.onchange = (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const importedData = JSON.parse(event.target.result);
+          
+          if (!importedData.technologies || !Array.isArray(importedData.technologies)) {
+            throw new Error('Некорректный формат файла');
+          }
+          
+          if (window.confirm(
+            `Импортировать ${importedData.technologies.length} технологий и настройки? ` +
+            'Существующие данные будут перезаписаны.'
+          )) {
+            updateTechnologies(importedData.technologies);
+            
+            if (importedData.settings) {
+              setSettings(importedData.settings);
+              // Не нужно вызывать toggleTheme, так как setSettings уже обновит тему
+            }
+            
+            alert('✅ Данные успешно импортированы! Применены новые технологии и настройки.');
+          }
+        } catch (error) {
+          alert(`❌ Ошибка импорта: ${error.message}`);
+        }
+      };
+      
+      reader.readAsText(file);
+    };
+    
+    input.click();
+  };
+
+  const handleResetData = () => {
+    if (window.confirm(
+      '⚠️ ВНИМАНИЕ: Это действие удалит ВСЕ технологии и вернет их к начальному состоянию. ' +
+      'Это действие нельзя отменить. Продолжить?'
+    )) {
+      updateTechnologies([...initialTechnologies]);
+      
+      alert('✅ Данные сброшены. Возвращены начальные технологии.');
+    }
+  };
+
+  const handleManualSave = () => {
+    localStorage.setItem('technologies', JSON.stringify(technologies));
+    localStorage.setItem('app-settings', JSON.stringify(settings));
+    alert('✅ Все данные сохранены в вашем браузере.');
   };
 
   return (
@@ -60,6 +155,10 @@ function Settings() {
       <Typography variant="h4" gutterBottom>
         ⚙️ Настройки приложения
       </Typography>
+
+      <Alert severity="info" sx={{ mb: 3 }}>
+        Все настройки автоматически сохраняются в вашем браузере
+      </Alert>
 
       <Paper sx={{ p: 3, mb: 3 }}>
         <Typography variant="h6" gutterBottom>
@@ -77,7 +176,7 @@ function Settings() {
             />
             <Switch
               checked={settings.darkMode}
-              onChange={handleChange('darkMode')}
+              onChange={handleThemeChange}  // Используем новый обработчик
               color="primary"
             />
           </ListItem>
@@ -96,11 +195,11 @@ function Settings() {
             </ListItemIcon>
             <ListItemText 
               primary="Показывать уведомления" 
-              secondary="Отображать системные уведомления" 
+              secondary={`Автозакрытие через ${notificationSettings.duration / 1000} сек`} 
             />
             <Switch
               checked={settings.notifications}
-              onChange={handleChange('notifications')}
+              onChange={handleSettingChange('notifications')}
               color="primary"
             />
           </ListItem>
@@ -115,7 +214,7 @@ function Settings() {
             />
             <Switch
               checked={settings.autoSave}
-              onChange={handleChange('autoSave')}
+              onChange={handleSettingChange('autoSave')}
               color="primary"
             />
           </ListItem>
@@ -124,35 +223,62 @@ function Settings() {
 
       <Paper sx={{ p: 3, mb: 3 }}>
         <Typography variant="h6" gutterBottom>
-          Язык интерфейса
+          📊 Управление данными
         </Typography>
         
-        <Box sx={{ display: 'flex', gap: 2 }}>
+        <Stack spacing={2}>
           <Button
-            variant={settings.language === 'ru' ? 'contained' : 'outlined'}
-            onClick={() => handleLanguageChange('ru')}
-            startIcon={<LanguageIcon />}
+            startIcon={<BackupIcon />}
+            onClick={handleExportData}
+            variant="contained"
+            color="primary"
+            fullWidth
           >
-            Русский
+            Экспорт всех данных ({technologies.length} технологий)
           </Button>
+          
           <Button
-            variant={settings.language === 'en' ? 'contained' : 'outlined'}
-            onClick={() => handleLanguageChange('en')}
-            startIcon={<LanguageIcon />}
+            startIcon={<CloudUploadIcon />}
+            onClick={handleImportData}
+            variant="outlined"
+            color="primary"
+            fullWidth
           >
-            English
+            Импорт данных из файла
           </Button>
-        </Box>
+          
+          <Button
+            startIcon={<SaveIcon />}
+            onClick={handleManualSave}
+            variant="outlined"
+            color="secondary"
+            fullWidth
+          >
+            Ручное сохранение данных
+          </Button>
+          
+          <Divider sx={{ my: 2 }} />
+          
+          <Button
+            startIcon={<DeleteForeverIcon />}
+            onClick={handleResetData}
+            variant="outlined"
+            color="error"
+            fullWidth
+          >
+            Сбросить все технологии ({initialTechnologies.length} начальных)
+          </Button>
+        </Stack>
+        
+        <Alert severity="warning" sx={{ mt: 2 }}>
+          Экспорт включает все технологии и настройки. Импорт заменит текущие данные.
+        </Alert>
       </Paper>
-
-      <Alert severity="info" sx={{ mb: 3 }}>
-        Настройки автоматически сохраняются в вашем браузере и применяются сразу.
-      </Alert>
 
       <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
         <Button
           startIcon={<RestoreIcon />}
-          onClick={handleReset}
+          onClick={handleResetSettings}
           variant="outlined"
           color="secondary"
         >

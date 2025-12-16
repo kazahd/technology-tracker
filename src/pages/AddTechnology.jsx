@@ -1,50 +1,45 @@
-import { useState, useEffect } from 'react'; // Добавил useEffect
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useTechnologies from '../hooks/useTechnologies';
+import { useNotification } from '../hooks/useNotification';
 import './Pages.css';
 
 function AddTechnology() {
     const navigate = useNavigate();
     const { technologies, setTechnologies } = useTechnologies();
+    const { showSuccess, showError } = useNotification();
     
-    // РАСШИРЯЕМ существующее состояние, добавляем новые поля из ТЗ
     const [formData, setFormData] = useState({
         title: '',
         description: '',
         category: 'frontend',
         status: 'not-started',
         notes: '',
-        // НОВЫЕ ПОЛЯ из ТЗ:
         difficulty: 'beginner',
         deadline: '',
         resources: ['']
     });
 
-    // НОВОЕ: состояние для ошибок валидации
     const [errors, setErrors] = useState({});
-    
-    // НОВОЕ: флаг валидности формы
     const [isFormValid, setIsFormValid] = useState(false);
 
-    // В начало компонента
-useEffect(() => {
-    const handleKeyDown = (e) => {
-        if (e.key === 'Escape') {
-            navigate('/technologies');
-        }
-        if (e.key === 'Enter' && e.ctrlKey) {
-            e.preventDefault();
-            if (isFormValid) {
-                handleSubmit(e);
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (e.key === 'Escape') {
+                navigate('/technologies');
             }
-        }
-    };
+            if (e.key === 'Enter' && e.ctrlKey) {
+                e.preventDefault();
+                if (isFormValid) {
+                    handleSubmit(e);
+                }
+            }
+        };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-}, [isFormValid, navigate]);
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isFormValid, navigate]);
 
-    // НОВАЯ функция: проверка URL
     const isValidUrl = (string) => {
         try {
             new URL(string);
@@ -54,11 +49,9 @@ useEffect(() => {
         }
     };
 
-    // НОВАЯ функция: валидация формы (из ТЗ)
     const validateForm = () => {
         const newErrors = {};
 
-        // Валидация названия (улучшаем существующую)
         if (!formData.title.trim()) {
             newErrors.title = 'Название технологии обязательно';
         } else if (formData.title.trim().length < 2) {
@@ -67,25 +60,22 @@ useEffect(() => {
             newErrors.title = 'Название не должно превышать 50 символов';
         }
 
-        // Валидация описания (улучшаем существующую)
         if (!formData.description.trim()) {
             newErrors.description = 'Описание технологии обязательно';
         } else if (formData.description.trim().length < 10) {
             newErrors.description = 'Описание должно содержать минимум 10 символов';
         }
 
-        // НОВАЯ валидация: дедлайн (из ТЗ)
         if (formData.deadline) {
             const deadlineDate = new Date(formData.deadline);
             const today = new Date();
-            today.setHours(0, 0, 0, 0); // обнуляем время
+            today.setHours(0, 0, 0, 0);
 
             if (deadlineDate < today) {
                 newErrors.deadline = 'Дедлайн не может быть в прошлом';
             }
         }
 
-        // НОВАЯ валидация: URL ресурсов
         formData.resources.forEach((resource, index) => {
             if (resource && !isValidUrl(resource)) {
                 newErrors[`resource_${index}`] = 'Введите корректный URL';
@@ -96,12 +86,10 @@ useEffect(() => {
         setIsFormValid(Object.keys(newErrors).length === 0);
     };
 
-    // НОВОЕ: запуск валидации при изменениях
     useEffect(() => {
         validateForm();
     }, [formData]);
 
-    // Сохраняем оригинальный обработчик, но улучшаем его
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({
@@ -110,7 +98,6 @@ useEffect(() => {
         }));
     };
 
-    // НОВАЯ функция: обработчик изменения ресурса
     const handleResourceChange = (index, value) => {
         const newResources = [...formData.resources];
         newResources[index] = value;
@@ -120,7 +107,6 @@ useEffect(() => {
         }));
     };
 
-    // НОВАЯ функция: добавление поля ресурса
     const addResourceField = () => {
         setFormData(prev => ({
             ...prev,
@@ -128,7 +114,6 @@ useEffect(() => {
         }));
     };
 
-    // НОВАЯ функция: удаление поля ресурса
     const removeResourceField = (index) => {
         if (formData.resources.length > 1) {
             const newResources = formData.resources.filter((_, i) => i !== index);
@@ -139,23 +124,19 @@ useEffect(() => {
         }
     };
 
-    // Сохраняем оригинальный handleSubmit, но добавляем валидацию
     const handleSubmit = (e) => {
         e.preventDefault();
         
-        // НОВОЕ: проверка валидности формы
         if (!isFormValid) {
-            alert('Пожалуйста, исправьте ошибки в форме');
+            showError('Пожалуйста, исправьте ошибки в форме');
             return;
         }
 
-        // Сохраняем оригинальную проверку
         if (!formData.title.trim()) {
-            alert('Пожалуйста, введите название технологии');
+            showError('Пожалуйста, введите название технологии');
             return;
         }
 
-        // НОВОЕ: очищаем пустые ресурсы перед сохранением
         const cleanedData = {
             ...formData,
             resources: formData.resources.filter(resource => resource.trim() !== '')
@@ -163,15 +144,21 @@ useEffect(() => {
 
         const newTechnology = {
             id: Date.now(),
-            ...cleanedData, // Используем очищенные данные
+            ...cleanedData,
             createdAt: new Date().toISOString()
         };
 
         const updatedTechnologies = [...technologies, newTechnology];
         setTechnologies(updatedTechnologies);
 
-        alert(`Технология "${formData.title}" успешно добавлена!`);
-        navigate('/technologies');
+        showSuccess(`Технология "${formData.title}" успешно добавлена!`, {
+            label: 'Посмотреть',
+            onClick: () => navigate('/technologies')
+        });
+        
+        setTimeout(() => {
+            navigate('/technologies');
+        }, 2000);
     };
 
     return (
@@ -181,7 +168,6 @@ useEffect(() => {
                 <p className="page-subtitle">Заполните информацию о технологии для изучения</p>
             </div>
 
-            {/* НОВОЕ: область для скринридера */}
             <div
                 role="status"
                 aria-live="polite"
@@ -195,7 +181,6 @@ useEffect(() => {
                 <div className="form-section">
                     <h3>📝 Основная информация</h3>
                     
-                    {/* Улучшаем поле названия: добавляем ARIA и валидацию */}
                     <div className="form-group">
                         <label htmlFor="title" className="required">
                             Название технологии
@@ -220,7 +205,6 @@ useEffect(() => {
                         )}
                     </div>
 
-                    {/* Улучшаем поле описания */}
                     <div className="form-group">
                         <label htmlFor="description" className="required">
                             Описание
@@ -264,7 +248,6 @@ useEffect(() => {
                             </select>
                         </div>
 
-                        {/* НОВОЕ поле: сложность */}
                         <div className="form-group">
                             <label htmlFor="difficulty">Сложность</label>
                             <select
@@ -299,7 +282,6 @@ useEffect(() => {
                             </select>
                         </div>
 
-                        {/* НОВОЕ поле: дедлайн */}
                         <div className="form-group">
                             <label htmlFor="deadline">Дедлайн (необязательно)</label>
                             <input
@@ -322,7 +304,6 @@ useEffect(() => {
                     </div>
                 </div>
 
-                {/* НОВЫЙ раздел: Ресурсы для изучения */}
                 <div className="form-section">
                     <h3>📚 Ресурсы для изучения</h3>
                     <div className="form-group">
@@ -408,7 +389,6 @@ useEffect(() => {
                 </div>
             </form>
 
-            {/* НОВОЕ: информация о доступности */}
             <div className="accessibility-info">
                 <h3>♿ Доступность формы:</h3>
                 <ul>

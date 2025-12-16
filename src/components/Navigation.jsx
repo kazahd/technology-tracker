@@ -1,6 +1,6 @@
 // src/components/Navigation.jsx
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   AppBar,
   Toolbar,
@@ -9,39 +9,57 @@ import {
   Tab,
   Box,
   IconButton,
-  Badge,
   useTheme,
-  useMediaQuery
+  useMediaQuery,
+  Avatar
 } from '@mui/material';
 import {
-  Notifications as NotificationsIcon,
   Home as HomeIcon,
   LibraryBooks as LibraryBooksIcon,
   Add as AddIcon,
   Equalizer as EqualizerIcon,
   Settings as SettingsIcon,
   Brightness4 as DarkModeIcon,
-  Brightness7 as LightModeIcon
+  Brightness7 as LightModeIcon,
+  Person as PersonIcon,
+  Event as EventIcon
 } from '@mui/icons-material';
+import { useAuth } from '../context/AuthContext';
 
 function Navigation({ onToggleTheme, themeMode }) {
   const location = useLocation();
+  const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const { isAuthenticated, currentUser, logout } = useAuth();
   
   // Определяем активную вкладку по текущему пути
   const getTabValue = () => {
     const path = location.pathname;
-    if (path === '/') return 0;
+    if (path === '/' || path === '/technology-tracker' || path === '/technology-tracker/') return 0;
     if (path === '/technologies') return 1;
     if (path === '/add' || path === '/add-technology') return 2;
     if (path === '/statistics') return 3;
-    if (path === '/settings') return 4;
+    if (path === '/deadlines') return 4;
+    if (path === '/settings') return 5;
     return 0;
   };
 
   const handleTabChange = (event, newValue) => {
     // Навигация будет через Link в Tab компонентах
+  };
+
+  const handleSettingsClick = (e) => {
+    if (location.pathname === '/settings') {
+      return;
+    }
+    e.preventDefault();
+    navigate('/settings');
+  };
+
+  const handleLogoutClick = () => {
+    logout();
+    navigate('/');
   };
 
   return (
@@ -51,6 +69,28 @@ function Navigation({ onToggleTheme, themeMode }) {
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
             🎯 Трекер технологий
           </Typography>
+
+          {/* Информация о пользователе */}
+          {isAuthenticated && (
+            <Box sx={{ 
+              display: { xs: 'none', sm: 'flex' },
+              alignItems: 'center', 
+              mr: 2
+            }}>
+              <Avatar sx={{ 
+                width: 32, 
+                height: 32, 
+                mr: 1, 
+                bgcolor: 'primary.main',
+                fontSize: '0.875rem'
+              }}>
+                {currentUser.charAt(0).toUpperCase() || <PersonIcon fontSize="small" />}
+              </Avatar>
+              <Typography variant="body2" sx={{ fontSize: '0.875rem' }}>
+                {currentUser || 'Пользователь'}
+              </Typography>
+            </Box>
+          )}
 
           {/* Кнопка переключения темы */}
           <IconButton 
@@ -62,12 +102,17 @@ function Navigation({ onToggleTheme, themeMode }) {
             {themeMode === 'dark' ? <LightModeIcon /> : <DarkModeIcon />}
           </IconButton>
 
-          {/* Иконка уведомлений с бейджем как в Dashboard из ТЗ */}
-          <IconButton color="inherit" aria-label="Уведомления">
-            <Badge badgeContent={3} color="error">
-              <NotificationsIcon />
-            </Badge>
-          </IconButton>
+          {/* Кнопка выхода (только если авторизован) */}
+          {isAuthenticated && (
+            <IconButton 
+              onClick={handleLogoutClick}
+              color="inherit"
+              title="Выйти из системы"
+              aria-label="Выйти из системы"
+            >
+              <PersonIcon />
+            </IconButton>
+          )}
         </Toolbar>
 
         {/* Вкладки навигации */}
@@ -117,11 +162,19 @@ function Navigation({ onToggleTheme, themeMode }) {
               aria-label="Статистика"
             />
             <Tab 
+              icon={<EventIcon />}
+              iconPosition="start"
+              label={!isMobile ? "Дедлайны" : ""}
+              component={Link}
+              to="/deadlines"
+              sx={{ minHeight: 64 }}
+              aria-label="Управление дедлайнами"
+            />
+            <Tab 
               icon={<SettingsIcon />}
               iconPosition="start"
               label={!isMobile ? "Настройки" : ""}
-              component={Link}
-              to="/settings"
+              onClick={handleSettingsClick}
               sx={{ minHeight: 64 }}
               aria-label="Настройки"
             />

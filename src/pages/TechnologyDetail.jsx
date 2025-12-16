@@ -3,9 +3,11 @@ import { useState } from 'react';
 import useTechnologies from '../hooks/useTechnologies';
 import ProgressBar from '../components/ProgressBar';
 import './Pages.css';
+import { useNotification } from '../hooks/useNotification';
 
 function TechnologyDetail() {
-  const { techId } = useParams();
+  const { techId } = useParams(); 
+  const { showSuccess } = useNotification();
   const navigate = useNavigate();
   const { technologies, updateStatus, updateNotes } = useTechnologies();
   

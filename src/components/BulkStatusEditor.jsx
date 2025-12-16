@@ -1,12 +1,26 @@
 // components/BulkStatusEditor.jsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNotification } from '../hooks/useNotification';
 import './BulkStatusEditor.css';
 
-function BulkStatusEditor({ technologies, onUpdateStatusBulk }) {
+function BulkStatusEditor({ 
+  technologies = [], 
+  selectedTechs = [], 
+  onClose, 
+  updateStatusBulk 
+}) {
     const [selectedTechIds, setSelectedTechIds] = useState([]);
     const [newStatus, setNewStatus] = useState('not-started');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [statusMessage, setStatusMessage] = useState('');
+    const { showSuccess, showError } = useNotification();
+    
+    // Инициализируем выбранные технологии из пропсов
+    useEffect(() => {
+        if (selectedTechs && selectedTechs.length > 0) {
+            setSelectedTechIds(selectedTechs);
+        }
+    }, [selectedTechs]);
 
     // Выбор всех технологий
     const handleSelectAll = (e) => {
@@ -39,7 +53,12 @@ function BulkStatusEditor({ technologies, onUpdateStatusBulk }) {
     // Применение нового статуса
     const handleApplyStatus = async () => {
         if (selectedTechIds.length === 0) {
-            setStatusMessage('Выберите хотя бы одну технологию для изменения статуса');
+            showError('Выберите хотя бы одну технологию для изменения статуса');
+            return;
+        }
+
+        if (!updateStatusBulk || typeof updateStatusBulk !== 'function') {
+            showError('Функция массового обновления недоступна');
             return;
         }
 
@@ -48,25 +67,39 @@ function BulkStatusEditor({ technologies, onUpdateStatusBulk }) {
 
         try {
             // Имитация асинхронной операции
-            await new Promise(resolve => setTimeout(resolve, 800));
+            await new Promise(resolve => setTimeout(resolve, 300));
             
             // Применяем статус ко всем выбранным
-            onUpdateStatusBulk(selectedTechIds, newStatus);
+            updateStatusBulk(selectedTechIds, newStatus);
             
-            setStatusMessage(`Статус успешно изменен для ${selectedTechIds.length} технологий`);
+            // Показываем уведомление
+            const statusText = {
+                'completed': 'завершено',
+                'in-progress': 'в процессе', 
+                'not-started': 'не начато'
+            };
             
-            // Очищаем выбор через 2 секунды
-            setTimeout(() => {
-                setSelectedTechIds([]);
-                setStatusMessage('');
-            }, 2000);
+            showSuccess(
+                `Статус ${selectedTechIds.length} технологий изменен на "${statusText[newStatus]}"`
+            );
+            
+            // Сбрасываем выбор, но НЕ закрываем окно
+            setSelectedTechIds([]);
+            setStatusMessage(`✓ Статус успешно изменен для ${selectedTechIds.length} технологий. Выбор сброшен.`);
             
         } catch (error) {
-            setStatusMessage('Ошибка при изменении статусов');
-            console.error('Ошибка:', error);
+            console.error('Ошибка при изменении статусов:', error);
+            showError('Ошибка при изменении статусов: ' + error.message);
+            setStatusMessage('✗ Ошибка при изменении статусов');
         } finally {
             setIsSubmitting(false);
         }
+    };
+
+    // Сбросить выбранные технологии
+    const handleResetSelection = () => {
+        setSelectedTechIds([]);
+        setStatusMessage('Выбор сброшен');
     };
 
     // Получение текста статуса
@@ -89,9 +122,24 @@ function BulkStatusEditor({ technologies, onUpdateStatusBulk }) {
         }
     };
 
+    // Кнопка закрытия
+    const handleClose = () => {
+        if (onClose) onClose();
+    };
+
     return (
         <div className="bulk-status-editor" role="region" aria-labelledby="bulk-editor-title">
-            <h3 id="bulk-editor-title">📝 Массовое редактирование статусов</h3>
+            <div className="bulk-editor-header">
+                <h3 id="bulk-editor-title">📝 Массовое редактирование статусов</h3>
+                <button 
+                    onClick={handleClose}
+                    className="close-btn"
+                    aria-label="Закрыть редактор массового редактирования"
+                    title="Закрыть"
+                >
+                    ✕
+                </button>
+            </div>
             
             {/* Сообщения для скринридера */}
             <div 
@@ -107,7 +155,7 @@ function BulkStatusEditor({ technologies, onUpdateStatusBulk }) {
             {/* Визуальное сообщение о статусе */}
             {statusMessage && (
                 <div 
-                    className={`status-feedback ${statusMessage.includes('Ошибка') ? 'error' : 'info'}`}
+                    className={`status-feedback ${statusMessage.includes('✗') ? 'error' : 'success'}`}
                     role="alert"
                     aria-live="assertive"
                 >
@@ -134,22 +182,28 @@ function BulkStatusEditor({ technologies, onUpdateStatusBulk }) {
                     </select>
                 </div>
 
-                <button
-                    onClick={handleApplyStatus}
-                    disabled={selectedTechIds.length === 0 || isSubmitting}
-                    className="apply-btn"
-                    aria-busy={isSubmitting}
-                    aria-label={`Применить статус "${getStatusText(newStatus)}" к ${selectedTechIds.length} выбранным технологиям`}
-                >
-                    {isSubmitting ? (
-                        <>
-                            <span className="spinner" aria-hidden="true"></span>
-                            Применение...
-                        </>
-                    ) : (
-                        `Применить к ${selectedTechIds.length} технологиям`
-                    )}
-                </button>
+                <div className="bulk-actions">
+                    <button
+                        onClick={handleApplyStatus}
+                        disabled={selectedTechIds.length === 0 || isSubmitting}
+                        className="apply-btn"
+                        aria-busy={isSubmitting}
+                        aria-label={`Применить статус "${getStatusText(newStatus)}" к ${selectedTechIds.length} выбранным технологиям`}
+                    >
+                        {isSubmitting ? (
+                            <>
+                                <span className="spinner" aria-hidden="true"></span>
+                                Применение...
+                            </>
+                        ) : (
+                            `✅ Применить к ${selectedTechIds.length} технологиям`
+                        )}
+                    </button>
+                    
+                    
+                    
+                    
+                </div>
             </div>
 
             {/* Список технологий */}
@@ -196,6 +250,7 @@ function BulkStatusEditor({ technologies, onUpdateStatusBulk }) {
                                     <label htmlFor={`tech-checkbox-${tech.id}`} className="tech-title">
                                         {tech.title}
                                     </label>
+                                    <span className="tech-category">{tech.category}</span>
                                 </div>
                                 
                                 <div className="tech-cell status-cell">
@@ -209,7 +264,7 @@ function BulkStatusEditor({ technologies, onUpdateStatusBulk }) {
 
                     {technologies.length === 0 && (
                         <div className="empty-list" role="alert">
-                            <p>Технологий пока нет. Добавьте технологии для массового редактирования.</p>
+                            <p>📭 Технологий пока нет. Добавьте технологии для массового редактирования.</p>
                         </div>
                     )}
                 </div>
@@ -218,11 +273,22 @@ function BulkStatusEditor({ technologies, onUpdateStatusBulk }) {
             {/* Статистика */}
             {technologies.length > 0 && (
                 <div className="bulk-stats" role="contentinfo">
-                    <p>
-                        <strong>Статистика:</strong> Всего технологий: {technologies.length} | 
-                        Выбрано: {selectedTechIds.length} | 
-                        Не выбрано: {technologies.length - selectedTechIds.length}
-                    </p>
+                    <div className="stats-grid">
+                        <div className="stat-item">
+                            <span className="stat-label">Всего технологий:</span>
+                            <span className="stat-value">{technologies.length}</span>
+                        </div>
+                        <div className="stat-item">
+                            <span className="stat-label">Выбрано:</span>
+                            <span className="stat-value selected-count">{selectedTechIds.length}</span>
+                        </div>
+                        <div className="stat-item">
+                            <span className="stat-label">Новый статус:</span>
+                            <span className="stat-value new-status-badge">
+                                {getStatusEmoji(newStatus)} {getStatusText(newStatus)}
+                            </span>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>

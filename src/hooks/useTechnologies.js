@@ -1,4 +1,4 @@
-// hooks/useTechnologies.js (полная версия с новой функцией)
+// hooks/useTechnologies.js (обновленная версия с поддержкой дедлайнов)
 import useLocalStorage from './useLocalStorage';
 
 const initialTechnologies = [
@@ -8,7 +8,10 @@ const initialTechnologies = [
         description: 'Изучение базовых компонентов React и их жизненного цикла', 
         status: 'completed',
         notes: 'Изучил основы компонентов, осталось разобрать HOC',
-        category: 'frontend'
+        category: 'frontend',
+        difficulty: 'beginner',
+        deadline: '', // Добавляем поле дедлайна
+        resources: []
     },
     { 
         id: 2, 
@@ -16,7 +19,10 @@ const initialTechnologies = [
         description: 'Освоение синтаксиса JSX и его отличий от HTML', 
         status: 'in-progress',
         notes: '',
-        category: 'frontend'
+        category: 'frontend',
+        difficulty: 'beginner',
+        deadline: '',
+        resources: []
     },
     { 
         id: 3, 
@@ -24,7 +30,10 @@ const initialTechnologies = [
         description: 'Работа с состоянием компонентов и подъём состояния', 
         status: 'not-started',
         notes: '',
-        category: 'frontend'
+        category: 'frontend',
+        difficulty: 'intermediate',
+        deadline: '',
+        resources: []
     },
     { 
         id: 4, 
@@ -32,7 +41,10 @@ const initialTechnologies = [
         description: 'Изучение useState, useEffect и создание собственных хуков', 
         status: 'not-started',
         notes: '',
-        category: 'frontend'
+        category: 'frontend',
+        difficulty: 'intermediate',
+        deadline: '',
+        resources: []
     },
     { 
         id: 5, 
@@ -40,7 +52,10 @@ const initialTechnologies = [
         description: 'Настройка маршрутизации в React-приложениях', 
         status: 'in-progress',
         notes: 'Разобрал BrowserRouter, перехожу к динамическим маршрутам',
-        category: 'frontend'
+        category: 'frontend',
+        difficulty: 'beginner',
+        deadline: '',
+        resources: []
     },
     { 
         id: 6, 
@@ -48,7 +63,10 @@ const initialTechnologies = [
         description: 'Глобальное управление состоянием приложения', 
         status: 'not-started',
         notes: '',
-        category: 'frontend'
+        category: 'frontend',
+        difficulty: 'intermediate',
+        deadline: '',
+        resources: []
     },
     { 
         id: 7, 
@@ -56,7 +74,10 @@ const initialTechnologies = [
         description: 'Изучение современного стейт-менеджмента', 
         status: 'not-started',
         notes: '',
-        category: 'frontend'
+        category: 'frontend',
+        difficulty: 'advanced',
+        deadline: '',
+        resources: []
     },
     { 
         id: 8, 
@@ -64,7 +85,10 @@ const initialTechnologies = [
         description: 'Типизация React-приложений', 
         status: 'completed',
         notes: 'Прошёл базовый курс, нужно практиковаться на реальном проекте',
-        category: 'frontend'
+        category: 'frontend',
+        difficulty: 'intermediate',
+        deadline: '',
+        resources: []
     }
 ];
 
@@ -86,12 +110,21 @@ function useTechnologies() {
         );
     };
 
-    // НОВАЯ ФУНКЦИЯ: Массовое обновление статусов
-    const updateStatusBulk = (techIds, newStatus) => {
+    // НОВАЯ ФУНКЦИЯ: Обновление дедлайна
+    const updateDeadline = (techId, newDeadline) => {
+        setTechnologies(prev =>
+            prev.map(tech =>
+                tech.id === techId ? { ...tech, deadline: newDeadline } : tech
+            )
+        );
+    };
+
+    // НОВАЯ ФУНКЦИЯ: Массовое обновление дедлайнов
+    const updateDeadlinesBulk = (techIds, newDeadline) => {
         setTechnologies(prev =>
             prev.map(tech => {
                 if (techIds.includes(tech.id)) {
-                    return { ...tech, status: newStatus };
+                    return { ...tech, deadline: newDeadline };
                 }
                 return tech;
             })
@@ -143,15 +176,44 @@ function useTechnologies() {
         return randomTech;
     };
 
+    // НОВАЯ ФУНКЦИЯ: Получение просроченных дедлайнов
+    const getOverdueDeadlines = () => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        return technologies.filter(tech => {
+            if (!tech.deadline) return false;
+            const deadlineDate = new Date(tech.deadline);
+            return deadlineDate < today && tech.status !== 'completed';
+        });
+    };
+
+    // НОВАЯ ФУНКЦИЯ: Получение ближайших дедлайнов
+    const getUpcomingDeadlines = (days = 7) => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const futureDate = new Date();
+        futureDate.setDate(today.getDate() + days);
+        
+        return technologies.filter(tech => {
+            if (!tech.deadline || tech.status === 'completed') return false;
+            const deadlineDate = new Date(tech.deadline);
+            return deadlineDate >= today && deadlineDate <= futureDate;
+        }).sort((a, b) => new Date(a.deadline) - new Date(b.deadline));
+    };
+
     return {
         technologies,
         setTechnologies,
         updateStatus,
-        updateStatusBulk, // Добавляем новую функцию в экспорт
+        updateDeadline, // Новая функция
+        updateDeadlinesBulk, // Новая функция
         updateNotes,
         markAllCompleted,
         resetAll,
         pickRandomTechnology,
+        getOverdueDeadlines, // Новая функция
+        getUpcomingDeadlines, // Новая функция
         progress: calculateProgress()
     };
 }
